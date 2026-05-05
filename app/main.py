@@ -12,7 +12,7 @@ async def check_admin(key: Optional[str] = Header(default=None)):
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    app.state.pool = await asyncpg.create_pool(DATABASE)
+    app.state.pool = await asyncpg.create_pool(DATABASE_URL)
     yield
     await app.state.pool.close()
 
@@ -54,7 +54,7 @@ async def get_schedule(studio_id: int, day: date):
 async def new_booking(booking: Booking):
     try:
         async with app.state.pool.acquire() as conn:
-            booking_id = await asyncpg.fetchval("SELECT * FROM music_studio.create_booking($1, $2, $3, $4, $5)", 
+            booking_id = await conn.fetchval("SELECT * FROM music_studio.create_booking($1, $2, $3, $4, $5)", 
                                            booking.user_id,
                                            booking.studio_id,
                                            booking.start,
@@ -67,7 +67,7 @@ async def new_booking(booking: Booking):
             raise HTTPException(status_code=404, detail=message) from exc
         if "Studio is not available" in message or "Booking time overlaps with another booking" in message:
             raise HTTPException(status_code=409, detail=message) from exc
-        raise HTTPEception(status_code=400, detail=message) from exc
+        raise HTTPException(status_code=400, detail=message) from exc
     return {"booking_id": booking_id}
 
 @app.get("/admin/bookings/active")

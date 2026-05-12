@@ -16,8 +16,8 @@ BEGIN
         RAISE EXCEPTION 'User with id % does not exist', NEW.user_id;
     END IF;
 
-    IF v_user_status <> 'active' THEN
-        RAISE EXCEPTION 'Only active users can create bookings';
+    IF v_user_status = 'blocked' THEN
+        RAISE EXCEPTION 'Blocked users cannot create bookings';
     END IF;
 
     SELECT status
@@ -50,7 +50,8 @@ BEGIN
     NEW.total_cost := music_studio.calculate_booking_cost(
         NEW.studio_id,
         NEW.start_time,
-        NEW.end_time
+        NEW.end_time,
+        v_user_status
     );
 
     RETURN NEW;

@@ -2,7 +2,8 @@
 CREATE OR REPLACE FUNCTION music_studio.calculate_booking_cost(
     p_studio_id INT,
     p_start_time TIMESTAMP,
-    p_end_time TIMESTAMP
+    p_end_time TIMESTAMP,
+    p_user_status VARCHAR(20)
 )
 RETURNS NUMERIC(12, 2)
 LANGUAGE plpgsql
@@ -11,6 +12,7 @@ AS $$
 DECLARE
     v_hourly_cost NUMERIC(10, 2);
     v_hours NUMERIC;
+    v_total_cost NUMERIC(12, 2);
 BEGIN
     IF p_end_time <= p_start_time THEN
         RAISE EXCEPTION 'End time must be greater than start time';
@@ -26,8 +28,13 @@ BEGIN
     END IF;
 
     v_hours := EXTRACT(EPOCH FROM (p_end_time - p_start_time)) / 3600;
+    v_total_cost := v_hourly_cost * v_hours;
 
-    RETURN ROUND(v_hourly_cost * v_hours, 2);
+    IF p_user_status = 'active' THEN
+        v_total_cost := v_total_cost * 0.95;
+    END IF;
+
+    RETURN ROUND(v_total_cost, 2);
 END;
 $$;
 

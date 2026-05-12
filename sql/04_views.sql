@@ -103,3 +103,19 @@ SELECT
 FROM music_studio.reviews r
 JOIN music_studio.studios s ON s.studio_id = r.studio_id
 JOIN music_studio.users u ON r.user_id = u.user_id;
+
+-- 8. Отзывы на оборудование.
+CREATE OR REPLACE VIEW music_studio.v_equipment_reviews AS
+SELECT
+    e.equipment_id,
+    e.equipment_name,
+    u.user_id,
+    u.full_name,
+    re.review_id,
+    r.created_at,
+    re.comment,
+    re.rating
+FROM music_studio.review_equipment re
+JOIN music_studio.reviews r ON re.review_id = r.review_id
+JOIN music_studio.equipment e ON re.equipment_id = e.equipment_id
+JOIN music_studio.users u ON r.user_id = u.user_id;

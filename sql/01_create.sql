@@ -60,6 +60,7 @@ CREATE TABLE music_studio.equipment (
     equipment_name VARCHAR(100) NOT NULL,
     equipment_type VARCHAR(50) NOT NULL,
     status VARCHAR(20) NOT NULL,
+    description TEXT,
 
     CONSTRAINT equipment_primary_key PRIMARY KEY (equipment_id),
 
@@ -202,6 +203,7 @@ CREATE TABLE music_studio.review_equipment (
     equipment_id INT,
     review_id INT,
     rating SMALLINT NOT NULL,
+    comment TEXT,
 
     CONSTRAINT review_equipment_primary_key PRIMARY KEY (equipment_id, review_id),
 

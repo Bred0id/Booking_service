@@ -1,5 +1,5 @@
 import asyncpg
-from schemas import Booking
+from schemas import Booking, Payment
 from config import DATABASE_URL, ADMIN_KEY, ANALYTICS_KEY
 from typing import Optional
 from contextlib import asynccontextmanager
@@ -76,8 +76,41 @@ async def get_active_bookings(_: None = Depends(check_admin)):
         rows = await conn.fetch("SELECT * FROM music_studio.v_active_bookings ORDER BY start_time")
     return [dict(row) for row in rows]
 
-@app.get("/reviews/{studio_id}")
+@app.get("/studios/{studio_id}/reviews")
 async def get_studio_review(studio_id: int):
     async with app.state.pool.acquire() as conn:
         rows = await conn.fetch("SELECT * FROM music_studio.v_studio_reviews WHERE studio_id = $1 ORDER BY studio_rating DESC", studio_id)
     return [dict(row) for row in rows]
+
+@app.get("studios/{equipment_id}/reviews")
+async def get_equipment_review(equipment_id: int):
+    async with app.state.pool.acquire() as conn:
+        rows = await conn.fetch("SELECT * FROM music_studio.v_equipment_reviews WHERE equipment_id = $1 ORDER BY equipment_rating DESC", equipment_id)
+    return [dict(row) for row in rows]
+
+@app.post("/payments")
+async def process_payment(payment: Payment):
+    try:
+        async with app.state.pool.acquire() as conn:
+            await conn.execute("INSERT INTO music_studio.payments(booking_id, amount, payment_method, status) VALUES ($1, $2, $3, $4)", 
+                               payment.booking_id,
+                               payment.amount,
+                               payment.payment_method,
+                               payment.status
+                            )
+    except asyncpg.UniqueViolationError as exc:
+        raise HTTPException(status_code=409, detail="Payment for this booking already exists") from exc
+    except asyncpg.PostgresError as exc:
+        message = str(exc)
+        if "does not exist" in message:
+            raise HTTPException(status_code=404, detail=message) from exc
+        if "booking total cost" in message:
+            raise HTTPException(status_code=404, detail=message) from exc
+        if "payment for cancelled booking" in message:
+            raise HTTPException(status_code=409, detail=message) from exc
+        raise HTTPException(status_code=400, detail=message) from exc
+    return {
+        "status": "payment processed successfully",
+        "booking_id": payment.booking_id
+        }
+

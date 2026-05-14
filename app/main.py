@@ -70,6 +70,14 @@ async def new_booking(booking: Booking):
         raise HTTPException(status_code=400, detail=message) from exc
     return {"booking_id": booking_id}
 
+@app.get("/bookings/{booking_id}")
+async def get_booking_info(booking_id: int):
+    async with app.state.pool.acquire() as conn:
+        booking = await conn.fetchrow("SELECT * FROM music_studio.bookings WHERE booking_id=$1", booking_id)
+    if booking is None:
+        raise HTTPException(status_code=404, detail="Booking not found")
+    return dict(booking)
+
 @app.get("/admin/bookings/active")
 async def get_active_bookings(_: None = Depends(check_admin)):
     async with app.state.pool.acquire() as conn:
@@ -82,7 +90,7 @@ async def get_studio_review(studio_id: int):
         rows = await conn.fetch("SELECT * FROM music_studio.v_studio_reviews WHERE studio_id = $1 ORDER BY studio_rating DESC", studio_id)
     return [dict(row) for row in rows]
 
-@app.get("studios/{equipment_id}/reviews")
+@app.get("/studios/{equipment_id}/reviews")
 async def get_equipment_review(equipment_id: int):
     async with app.state.pool.acquire() as conn:
         rows = await conn.fetch("SELECT * FROM music_studio.v_equipment_reviews WHERE equipment_id = $1 ORDER BY equipment_rating DESC", equipment_id)
